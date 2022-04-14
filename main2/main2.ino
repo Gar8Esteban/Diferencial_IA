@@ -15,17 +15,26 @@ const int pin2MI = 4;// pines de los motores
 struct Encoders{
   const int PIN; 
   int CONT;
+  int REV;
   };
   
-Encoders encD = {35, 0};//Rueda derecha
-Encoders encI = {21, 0};//Rueda Izquierda
+Encoders encD = {35, 0, 0};//Rueda derecha
+Encoders encI = {21, 0, 0};//Rueda Izquierda
 
 void IRAM_ATTR isrEncD(){// funcion del encoder Derecho
   encD.CONT += 1;
+  if(encD.CONT == 20){
+    encD.REV++;
+    encD.CONT = 0; 
+    }
   }
 
 void IRAM_ATTR isrEncI(){// funcion del encoder Izquiedo
   encI.CONT += 1;
+  if(encI.CONT == 20){
+    encI.REV++;
+    encI.CONT = 0; 
+    }
   }
 
 // fin encoders
@@ -35,13 +44,13 @@ hw_timer_t * timer = NULL;
 
 float RPM_D, RPM_I;
 volatile int contTiempo = 0;
+volatile bool banderaTimer = false;
 
 void IRAM_ATTR onTimer(){
-    if(contTiempo >= 0 && contTiempo <= 200){
-      contTiempo++;
-      }else{
-        contTiempo=0;
-        }  
+  if(contTiempo >= 0 && contTiempo <= 5){
+    contTiempo++;
+    banderaTimer = true;
+    }
 }
 
 // Fin timer
@@ -82,7 +91,7 @@ void setup() {
   // configuracion del timer 0 a 200ms
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 1000, true);//timer a 1ms
+  timerAlarmWrite(timer, 1000000, true);//timer a 1s
   timerAlarmEnable(timer);
 
 }
@@ -96,17 +105,16 @@ void loop() {
     ledcWrite(PWM0, valorSerial);
     ledcWrite(PWM1, valorSerial);
     }
-    if(contTiempo == 200){
-      RPM_D = ((encD.CONT/20.0)/0.2)*60.0;
-      RPM_I = ((encI.CONT/20.0)/0.2)*60.0;
-      Serial.print(RPM_D);
-      Serial.print(",");
-      Serial.println(RPM_I);
-//      Serial.println(filtroDerecho(RPM_D));
-      encD.CONT = 0;
-      encI.CONT = 0;
-      }
+  if(banderaTimer){// si la bandera está activa se ejecuta la orden del timer
+    if(contTiempo == 5 ){
+    Serial.println(1);
+    contTiempo = 0;
     
+    }else{
+      Serial.println(0);
+      }
+    }
+    banderaTimer = false;// Se desactiva la bandera para evitar el rebote. La bandera solo la activa el timer0
 }
 
 
