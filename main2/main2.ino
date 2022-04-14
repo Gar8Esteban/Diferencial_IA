@@ -34,16 +34,14 @@ void IRAM_ATTR isrEncI(){// funcion del encoder Izquiedo
 hw_timer_t * timer = NULL;
 
 float RPM_D, RPM_I;
+volatile int contTiempo = 0;
 
 void IRAM_ATTR onTimer(){
-    RPM_D = ((encD.CONT/20.0)/0.2)*60.0;
-    RPM_I = ((encI.CONT/20.0)/0.2)*60.0;
-    Serial.print(RPM_D);
-    Serial.print(",");
-    Serial.println(RPM_I);
-//      Serial.println(filtroDerecho(RPM_D));
-    encD.CONT = 0;
-    encI.CONT = 0;
+    if(contTiempo >= 0 && contTiempo <= 200){
+      contTiempo++;
+      }else{
+        contTiempo=0;
+        }  
 }
 
 // Fin timer
@@ -84,7 +82,7 @@ void setup() {
   // configuracion del timer 0 a 200ms
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 5000, true);
+  timerAlarmWrite(timer, 1000, true);//timer a 1ms
   timerAlarmEnable(timer);
 
 }
@@ -98,6 +96,17 @@ void loop() {
     ledcWrite(PWM0, valorSerial);
     ledcWrite(PWM1, valorSerial);
     }
+    if(contTiempo == 200){
+      RPM_D = ((encD.CONT/20.0)/0.2)*60.0;
+      RPM_I = ((encI.CONT/20.0)/0.2)*60.0;
+      Serial.print(RPM_D);
+      Serial.print(",");
+      Serial.println(RPM_I);
+//      Serial.println(filtroDerecho(RPM_D));
+      encD.CONT = 0;
+      encI.CONT = 0;
+      }
+    
 }
 
 
