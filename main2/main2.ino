@@ -58,18 +58,27 @@ void IRAM_ATTR onTimer(){
 // Filtros:
 float radD = 0.0;
 float radFilterD = radD;
-float alphaD = 0.05;
+float alphaD = 0.04;
 
 float radI = 0.0;
 float radFilterI = radI;
-float alphaI = 0.05;
+float alphaI = 0.04;
 
-float filtroDerecho(float);
 //
 
-//velocidades en rpm
-float velRPM(int);
+//velocidades en rad
+float velRad(int);
 
+
+//controlador de bajo nivel
+struct PID{
+  float P;
+  float I;
+  float D;
+  };
+PID pidRight = {2, 0.0, 0.0};
+int controlRight(float);
+int entradaD = 320;
 void setup() {
   Serial.begin(115200);// Comunicacion serial
   pinMode(pin1MD, OUTPUT);
@@ -101,24 +110,33 @@ void setup() {
   timerAlarmWrite(timer, 1000, true);//timer a 1ms
   timerAlarmEnable(timer);
 
-  ledcWrite(PWM0, 200);
-  ledcWrite(PWM1, 200);
+  ledcWrite(PWM0, 0);
+  ledcWrite(PWM1, entradaD);
 }
 
 
 int cont = 0;
+
+float errorRight = 0.0, errorLeft = 0.0;
 void loop() {
+
+  
 
   if(banderaTimer){// si la bandera está activa se ejecuta la orden del timer
     if(contTiempo == tiempoMuestreo ){
-      radD = velRPM(encD.CONT);
+      radD = velRad(encD.CONT);
       radFilterD = alphaD*radD + (1.0-alphaD)*radFilterD;
       
-      radI = velRPM(encI.CONT);
+      radI = velRad(encI.CONT);
       radFilterI = alphaI*radI + (1.0-alphaI)*radFilterI;
+
+      errorRight = entradaD - radFilterD;
       Serial.print(radFilterD);
       Serial.print(",");
-      Serial.println(radFilterI);
+      Serial.print(errorRight);
+      Serial.print(",");
+      Serial.println(controlRight(entradaD));
+      ledcWrite(PWM1, controlRight(entradaD));
       encD.CONT = 0;
       encI.CONT = 0;
       contTiempo = 0;
@@ -128,24 +146,28 @@ void loop() {
     
 }
 
-float velRPM(int rev){
+float velRad(int rev){
   float t = tiempoMuestreo/1000.0;
   float rad_s = ((rev/20.0)/t)*2*PI;
   return rad_s;
   }
-//  
-//float filtroDerecho(float RPM){
-//  float mulDerecho = 0.0;
-//  float sumDerecho = 0.0;
-//  derecho[100] = RPM;
-//  for(int i=0; i<101; i++){
-//    mulDerecho = KDerecho[i]*derecho[60-i];
-//    sumDerecho = sumDerecho + mulDerecho;
-//    }
-//  for(int j=100; j>=0; j--){
-//    if(j-1 >= 0){
-//      derecho[j-1] = derecho[j];
-//      }
-//    }
-//    return sumDerecho;
-//  }
+
+//controldor motor derecho
+
+float tm = tiempoMuestreo/1000.0;
+float T0d = pidRight.P + (pidRight.D/tm) + ((pidRight.I*tm)/2);
+float T1d = -pidRight.P - (((2*pidRight.D)/tm)) + ((pidRight.I*tm)/2);
+float T2d = ((pidRight.D)/tm);
+float Ukd_1 = 0.0; //señales de control
+float Ekd_1 = 0.0, Ekd_2 = 0.0; // errores;
+
+int controlRight(float e){
+  float UK;
+  UK = T0d*e + T1d*Ekd_1 + T2d*Ekd_2 + Ukd_1;
+  Ekd_2 = Ekd_1;
+  Ekd_1 = e;
+  Ukd_1 = UK;
+
+  return round(UK);  
+
+  }
