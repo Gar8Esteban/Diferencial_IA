@@ -2,12 +2,12 @@ const int pin1MD = 13;
 const int pin2MD = 14;
 const int pin1MI = 2;
 const int pin2MI = 4;// pines de los motores
-
+const int tiempoMuestreo = 100; //100ms
 // caracteristicas PWM 
-#define PWM0 1
-#define PWM1 2
-#define PWM2 3
-#define PWM3 4
+#define PWM0 2
+#define PWM1 3
+#define PWM2 4
+#define PWM3 5
 #define PWM_res 10
 #define PWM_freq 1000
 
@@ -23,18 +23,18 @@ Encoders encI = {21, 0, 0};//Rueda Izquierda
 
 void IRAM_ATTR isrEncD(){// funcion del encoder Derecho
   encD.CONT += 1;
-  if(encD.CONT == 20){
-    encD.REV++;
-    encD.CONT = 0; 
-    }
+//  if(encD.CONT == 20){
+//    encD.REV++;
+//    encD.CONT = 0; 
+//    }
   }
 
 void IRAM_ATTR isrEncI(){// funcion del encoder Izquiedo
   encI.CONT += 1;
-  if(encI.CONT == 20){
-    encI.REV++;
-    encI.CONT = 0; 
-    }
+//  if(encI.CONT == 20){
+//    encI.REV++;
+//    encI.CONT = 0; 
+//    }
   }
 
 // fin encoders
@@ -47,7 +47,7 @@ volatile int contTiempo = 0;
 volatile bool banderaTimer = false;
 
 void IRAM_ATTR onTimer(){
-  if(contTiempo >= 0 && contTiempo <= 5){
+  if(contTiempo >= 0 && contTiempo <= tiempoMuestreo){
     contTiempo++;
     banderaTimer = true;
     }
@@ -62,6 +62,9 @@ float derecho[61]={};// muestras pasadas del sensor derecho
 
 float filtroDerecho(float);
 //
+
+//velocidades en rpm
+float velRPM(int);
 
 void setup() {
   Serial.begin(115200);// Comunicacion serial
@@ -91,33 +94,41 @@ void setup() {
   // configuracion del timer 0 a 200ms
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 1000000, true);//timer a 1s
+  timerAlarmWrite(timer, 1000, true);//timer a 1ms
   timerAlarmEnable(timer);
 
+  ledcWrite(PWM0, 200);
+  ledcWrite(PWM1, 200);
 }
 
 
 int cont = 0;
 void loop() {
   // put your main code here, to run repeatedly:
-  if(Serial.available() > 0){
-    int valorSerial = Serial.parseInt();
-    ledcWrite(PWM0, valorSerial);
-    ledcWrite(PWM1, valorSerial);
-    }
+//  if(Serial.available() > 0){
+//    int valorSerial = Serial.parseInt();
+//    ledcWrite(PWM0, valorSerial);
+//    ledcWrite(PWM1, valorSerial);
+//    }
   if(banderaTimer){// si la bandera está activa se ejecuta la orden del timer
-    if(contTiempo == 5 ){
-    Serial.println(1);
-    contTiempo = 0;
-    
-    }else{
-      Serial.println(0);
-      }
+    if(contTiempo == tiempoMuestreo ){
+      Serial.print(velRPM(encD.CONT));
+      Serial.print(",");
+      Serial.println(velRPM(encI.CONT));
+      encD.CONT = 0;
+      encI.CONT = 0;
+      contTiempo = 0;
     }
     banderaTimer = false;// Se desactiva la bandera para evitar el rebote. La bandera solo la activa el timer0
+    }
+    
 }
-
-
+float velRPM(int rev){
+  float t = tiempoMuestreo/1000.0;
+  float rpm = ((rev/20.0)/t)*2*3.1416;
+  return rpm;
+  }
+  
 float filtroDerecho(float RPM){
   float mulDerecho = 0.0;
   float sumDerecho = 0.0;
