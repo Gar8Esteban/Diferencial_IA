@@ -19,7 +19,7 @@ struct Encoders{
   };
   
 Encoders encD = {35, 0, 0};//Rueda derecha
-Encoders encI = {21, 0, 0};//Rueda Izquierda
+Encoders encI = {34, 0, 0};//Rueda Izquierda
 
 void IRAM_ATTR isrEncD(){// funcion del encoder Derecho
   encD.CONT += 1;
@@ -66,7 +66,7 @@ struct PID{
   float D;
   };
 PID pidRight = {3000.0, 5.0, 100.0};//50 1250
-PID pidLeft = {1000.0, 0.0, 0.0};
+PID pidLeft = {0.0, 0.0, 0.0};
 int controlRight(float);
 int controlLeft(float);
 float entradaD = 0, entradaI = 9.5;
@@ -103,6 +103,7 @@ void setup() {
   timerAlarmWrite(timer, 10000, true);//timer a 10ms
   timerAlarmEnable(timer);
 
+  ledcWrite(PWM2, 1500);
 }
 
 
@@ -118,7 +119,7 @@ void loop() {
     radFilterI = alphaI*radI + (1.0-alphaI)*radFilterI;
     errorRight = abs(entradaD) - radFilterD;
     errorLeft = abs(entradaI) - radFilterI;
-    Serial.print(abs(entradaI));
+    Serial.print(radI);
     Serial.print(",");
     Serial.print(radFilterI);
     Serial.print(",");
@@ -132,13 +133,13 @@ void loop() {
         ledcWrite(PWM1, controlRight(errorRight));
         }
         
-    if(entradaI > 0){
-      ledcWrite(PWM2, controlLeft(errorLeft));
-      ledcWrite(PWM3, 0);
-      }else{
-        ledcWrite(PWM2, 0);
-        ledcWrite(PWM3, controlLeft(errorLeft));
-        }
+//    if(entradaI > 0){
+//      ledcWrite(PWM2, controlLeft(errorLeft));
+//      ledcWrite(PWM3, 0);
+//      }else{
+//        ledcWrite(PWM2, 0);
+//        ledcWrite(PWM3, controlLeft(errorLeft));
+//        }
     
     encD.CONT = 0;
     encI.CONT = 0;
