@@ -69,7 +69,7 @@ PID pidRight = {3000.0, 5.0, 100.0};//50 1250
 PID pidLeft = {0.0, 0.0, 0.0};
 int controlRight(float);
 int controlLeft(float);
-float entradaD = 0, entradaI = 9.5;
+float entradaD = 0, entradaI = 6.0;
 void setup() {
   Serial.begin(115200);// Comunicacion serial
   pinMode(pin1MD, OUTPUT);
@@ -78,18 +78,14 @@ void setup() {
   pinMode(pin2MI, OUTPUT);//Pines de salida de los motores
 
   ledcAttachPin(pin1MD, PWM0);
-  ledcSetup(PWM1, PWM_res, PWM_freq);
-
   ledcAttachPin(pin2MD, PWM1);
-  ledcSetup(PWM3, PWM_res, PWM_freq);// PWM para los motores
-
   ledcAttachPin(pin1MI, PWM2);
-  ledcSetup(PWM0, PWM_res, PWM_freq);
-
   ledcAttachPin(pin2MI, PWM3);
-  ledcSetup(PWM2, PWM_res, PWM_freq);
 
-  
+  ledcSetup(PWM0, PWM_res, PWM_freq);
+  ledcSetup(PWM1, PWM_res, PWM_freq);
+  ledcSetup(PWM2, PWM_res, PWM_freq);
+  ledcSetup(PWM3, PWM_res, PWM_freq);// PWM para los motores
 
   pinMode(encD.PIN, INPUT_PULLUP);// Pin 32 como entrada
   pinMode(encI.PIN, INPUT_PULLUP);// Pin 21 como entrada
@@ -103,9 +99,9 @@ void setup() {
   timerAlarmWrite(timer, 10000, true);//timer a 10ms
   timerAlarmEnable(timer);
 
-  ledcWrite(PWM2, 1500);
+  ledcWrite(PWM2, 00);
 }
-
+ 
 
 int contMuestras = 0;
 
