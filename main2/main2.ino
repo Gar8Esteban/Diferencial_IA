@@ -1,7 +1,7 @@
 const int pin1MD = 13;
 const int pin2MD = 12;
-const int pin1MI = 2;
-const int pin2MI = 4;// pines de los motores
+const int pin1MI = 5;
+const int pin2MI = 18;// pines de los motores
 const int tiempoMuestreo = 10; //10ms
 // caracteristicas PWM 
 #define PWM0 2
@@ -69,7 +69,7 @@ PID pidRight = {3000.0, 5.0, 100.0};//50 1250
 PID pidLeft = {0.0, 0.0, 0.0};
 int controlRight(float);
 int controlLeft(float);
-float entradaD = 0, entradaI = 6.0;
+float entradaD = 13.0, entradaI = 0.0;
 void setup() {
   Serial.begin(115200);// Comunicacion serial
   pinMode(pin1MD, OUTPUT);
@@ -98,8 +98,6 @@ void setup() {
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, 10000, true);//timer a 10ms
   timerAlarmEnable(timer);
-
-  ledcWrite(PWM2, 00);
 }
  
 
@@ -115,11 +113,12 @@ void loop() {
     radFilterI = alphaI*radI + (1.0-alphaI)*radFilterI;
     errorRight = abs(entradaD) - radFilterD;
     errorLeft = abs(entradaI) - radFilterI;
-    Serial.print(radI);
+    
+    Serial.print(radD);
     Serial.print(",");
-    Serial.print(radFilterI);
+    Serial.print(radFilterD);
     Serial.print(",");
-    Serial.println(errorLeft);
+    Serial.println(0);
     
     if(entradaD > 0){
       ledcWrite(PWM0, controlRight(errorRight));
