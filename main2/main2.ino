@@ -99,7 +99,7 @@ void setup() {
   timerAlarmWrite(timer, 10000, true);//timer a 10ms
   timerAlarmEnable(timer);
 
-  ledcWrite(PWM2, 90);
+  ledcWrite(PWM2, 0);
 }
  
 
