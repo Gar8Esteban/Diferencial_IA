@@ -65,7 +65,7 @@ struct PID{
   float D;
   };
 PID pidRight = {3000.0, 5.0, 100.0};//50 1250
-PID pidLeft = {0.0, 0.0, 0.0};
+PID pidLeft = {3000.0, 50.0, 100.0};
 
 float tm = del/1000.0;
 float T0d = pidRight.P + (pidRight.D/tm) + ((pidRight.I*tm)/2);
@@ -130,11 +130,11 @@ void leerEncoders(){
   errorLeft = abs(entradaI) - radFilterI;
 
   
+  Serial.print(radFilterI);
+  Serial.print(",");
   Serial.print(radFilterD);
   Serial.print(",");
-  Serial.print(entradaD);
-  Serial.print(",");
-  Serial.println(errorRight);
+  Serial.println(errorLeft-radFilterI);
 
   if(entradaD > 0){
       ledcWrite(PWM0, controlRight(errorRight));
@@ -142,6 +142,13 @@ void leerEncoders(){
       }else{
         ledcWrite(PWM0, 0);
         ledcWrite(PWM1, controlRight(errorRight));
+        }
+  if(entradaI > 0){
+      ledcWrite(PWM2, controlLeft(errorLeft));
+      ledcWrite(PWM3, 0);
+      }else{
+        ledcWrite(PWM2, 0);
+        ledcWrite(PWM3, controlLeft(errorLeft));
         }
 
   encD.CONT = 0;
