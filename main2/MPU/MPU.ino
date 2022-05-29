@@ -1,7 +1,13 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include "BluetoothSerial.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
 
 Adafruit_MPU6050 mpu;
+BluetoothSerial SerialBT;
 
 float thetaZf, thetaZi=0.0, degThetaZ;
 unsigned long int tiempoAnt=0;
@@ -57,7 +63,7 @@ float radFilterD = RadD, radFilterI = RadI;
 float alphaD = 0.01, alphaI = 0.01;
 
 float errorRight, errorLeft;
-float entradaD = 10, entradaI = 10;
+float entradaD = 0.0, entradaI = 0.0;
 
 struct PID{
   float P;
@@ -129,12 +135,12 @@ void leerEncoders(){
   errorRight = abs(entradaD) - radFilterD;
   errorLeft = abs(entradaI) - radFilterI;
 
-  
-  Serial.print(radFilterI);
-  Serial.print(",");
-  Serial.print(radFilterD);
-  Serial.print(",");
-  Serial.println(errorLeft-radFilterI);
+//  
+//  Serial.print(radFilterI);
+//  Serial.print(",");
+//  Serial.print(radFilterD);
+//  Serial.print(",");
+//  Serial.println(errorLeft-radFilterIgit );
 
   if(entradaD > 0){
       ledcWrite(PWM0, controlRight(errorRight));
@@ -154,6 +160,39 @@ void leerEncoders(){
   encD.CONT = 0;
   encI.CONT = 0;
   }
+String direct;
+float vel;
+void lecturaBlue(){
+  if (Serial.available()) {
+    SerialBT.write(Serial.read());
+  }
+  if (SerialBT.available()) {
+    String lectura = SerialBT.readString(); 
+    direct = lectura.substring(0,1);
+    vel = lectura.substring(2,4).toFloat();
+    
+    if(direct.compareTo("A")==0){
+      entradaD = vel;
+      entradaI = vel;
+      }
+    if(direct.compareTo("R")==0){
+       entradaD = -1.0 * vel;
+      entradaI = -1.0 * vel;
+      }
+    if(direct.compareTo("D")==0){
+       entradaD = vel;
+      entradaI = -1.0 * vel;
+      }
+    if(direct.compareTo("I")==0){
+      entradaD = -1.0 * vel;
+      entradaI = vel;
+      }
+    if(direct.compareTo("X")==0){
+      entradaD = vel;
+      entradaI = vel;
+      }
+  }
+}
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -161,11 +200,12 @@ void setup() {
   Serial.println("Listo");// inicialización puerto serie
   
   if (!mpu.begin()) { // inicialización mpu
-  Serial.println("MPU falló");
-  while (1)
-    yield();
+  Serial.println("MPU falló"); 
   }
   Serial.println("MPU encontrado");
+  
+  SerialBT.begin("Diferencial");
+ 
   mpu.setAccelerometerRange(MPU6050_RANGE_2_G);// resolución del acelerometro 2g
   mpu.setGyroRange(MPU6050_RANGE_250_DEG); // resolución del giroscopio 250 deg/s
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);// filtro pasa bajas 5Hz delay de lectura 20ms
@@ -195,9 +235,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   if(millis()-tiempoAnt >= del){
+    lecturaBlue();
     lecturaMPU();
     leerEncoders();
     tiempoAnt = millis();//reset del proceso
-    
     }
 }
